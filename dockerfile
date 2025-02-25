@@ -1,8 +1,8 @@
 # 1. Partir d'une image Node officielle (version 18, variante slim)
 FROM node:18-slim
 
-# 2. Installer ImageMagick (pour vos traitements d'image)
-RUN apt-get update && apt-get install -y imagemagick
+# 2. Installer ImageMagick
+RUN apt-get update && apt-get install -y imagemagick && convert -version
 
 # 3. Définir le dossier de travail
 WORKDIR /app
@@ -11,14 +11,14 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 
-# 5. Copier le reste du code (src, tsconfig, etc.)
+# 5. Copier le reste du code
 COPY . .
 
 # 6. Compiler le code TypeScript
-RUN npm run build && ls -l dist
+RUN npm run build
 
-# 7. Exposer le port 3333 (celui que vous utilisez dans index.ts)
+# 7. Exposer le port 3333 (ou autre)
 EXPOSE 3333
 
-# 8. Lancer l'application (script "start" => "node dist/index.js")
+# 8. Lancer l'application
 CMD ["npm", "start"]
