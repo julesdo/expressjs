@@ -1,3 +1,3 @@
 git add .
-git commit -m "maj 1.20 perspective deleted"
+git commit -m "maj 1.21 ratio fix"
 git push -u origin main

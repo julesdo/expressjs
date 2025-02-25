@@ -355,7 +355,11 @@ async function generateMockup(
 
   // Redimensionnement de l'œuvre avec ImageMagick
   // (on se base sur compositeOptions.width/height)
-  const resizeCmd = `convert "${artworkInputPath}" -resize ${compositeOptions.width}x${compositeOptions.height}\\> "${artworkResizedPath}"`;
+  const resizeCmd = `convert "${artworkInputPath}" \
+  -resize ${compositeOptions.width}x${compositeOptions.height}^ \
+  -gravity center \
+  -extent ${compositeOptions.width}x${compositeOptions.height} \
+  "${artworkResizedPath}"`;
   await execAsync(resizeCmd);
 
   // Composition de l'œuvre redimensionnée sur le template
