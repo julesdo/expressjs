@@ -1,11 +1,19 @@
 // server.ts
+
 import express, { Request, Response } from "express";
 import bodyParser from "body-parser";
 import crypto from "crypto";
 import fs from "fs/promises";
 import path from "path";
-import sharp from "sharp";
 import Bull, { Job } from "bull";
+
+// **** NOUVEAU : pour exécuter ImageMagick via des commandes shell ****
+import { exec } from "child_process";
+import { promisify } from "util";
+import os from "os";
+import { v4 as uuidv4 } from "uuid";
+
+const execAsync = promisify(exec);
 
 // ---------- Middleware pour conserver le body brut ----------
 const rawBodySaver = (req: Request, res: Response, buf: Buffer, encoding: string) => {
@@ -103,173 +111,151 @@ const positioningConfig: { [key: string]: CompositeOptions } = {
 };
 
 const derivedProductDefinitions: DerivedProductDefinition[] = [
-    {
-        name: "Les Oeuvres sur Plexiglas",
-        description: `• Trois formats disponibles<br>
+  {
+    name: "Les Oeuvres sur Plexiglas",
+    description: `• Trois formats disponibles<br>
     • Acrylique brillant transparent de 3 mm<br>
     • Trous pré-percés, entretoises et languettes adhésives disponibles<br>
     • Impression en couleur de qualité<br><br>
     Remarque : Chaque impression est protégée par un film vert détachable. Retirez-le avant l’affichage.<br>
     À la recherche d’une décoration murale originale ? Le plexiglas met en valeur les couleurs pour un rendu réaliste et vibrant.`,
-        template: path.join(process.cwd(), "public", "templates", "plexiglas.png"),
-        compositeOptions: positioningConfig["plexiglas"] || {
-          top: 0,
-          left: 0,
-          width: 500,
-          height: 500,
-        },
-        variants: [
-          { option: "40X30", price: "100.00", skuSuffix: "40x30" },
-          { option: "60X40", price: "180.00", skuSuffix: "60x40" },
-          { option: "90X60", price: "250.00", skuSuffix: "90x60" },
-        ],
-        price: "100.00",
-        collections: ["Boutique"],
-      },
-      {
-        name: "Le Sac fourre-tout Deluxe en coton",
-        description: `Toile 100 % coton, 320 g/m²<br>
+    template: path.join(process.cwd(), "public", "templates", "plexiglas.png"),
+    compositeOptions: positioningConfig["plexiglas"] || {
+      top: 0,
+      left: 0,
+      width: 500,
+      height: 500,
+    },
+    variants: [
+      { option: "40X30", price: "100.00", skuSuffix: "40x30" },
+      { option: "60X40", price: "180.00", skuSuffix: "60x40" },
+      { option: "90X60", price: "250.00", skuSuffix: "90x60" },
+    ],
+    price: "100.00",
+    collections: ["Boutique"],
+  },
+  {
+    name: "Le Sac fourre-tout Deluxe en coton",
+    description: `Toile 100 % coton, 320 g/m²<br>
     Dimensions : 38 cm H x 47 cm L x 12 cm P<br>
     Longueur des anses : 26 cm`,
-        template: path.join(process.cwd(), "public", "templates", "tote-bag.png"),
-        compositeOptions: positioningConfig["tote-bag"] || {
-          top: 0,
-          left: 0,
-          width: 500,
-          height: 500,
-        },
-        price: "30.00",
-        collections: ["Boutique"],
-      },
-      {
-        name: "Le Tee Shirt HOMME",
-        description: `Manches courtes / Blanc<br>
+    template: path.join(process.cwd(), "public", "templates", "tote-bag.png"),
+    compositeOptions: positioningConfig["tote-bag"] || {
+      top: 0,
+      left: 0,
+      width: 500,
+      height: 500,
+    },
+    price: "30.00",
+    collections: ["Boutique"],
+  },
+  {
+    name: "Le Tee Shirt HOMME",
+    description: `Manches courtes / Blanc<br>
     Tailles : S, M, L, XL<br>
     100 % coton léger (Blanc), 99 % coton, 1 % polyester (gris cendré), 97 % coton, 3 % polyester (gris chiné)<br>
     Coutures doubles pour une résistance accrue`,
-        template: path.join(
-          process.cwd(),
-          "public",
-          "templates",
-          "tee-shirt-homme.png",
-        ),
-        compositeOptions: positioningConfig["tee-shirt-homme"] || {
-          top: 0,
-          left: 0,
-          width: 500,
-          height: 500,
-        },
-        variants: [
-          { option: "S", price: "40.00" },
-          { option: "M", price: "40.00" },
-          { option: "L", price: "40.00" },
-          { option: "XL", price: "40.00" },
-        ],
-        price: "40.00",
-        collections: ["Boutique"],
-      },
-      {
-        name: "Le Tee Shirt Femme",
-        description: `Manches courtes / Blanc<br>
+    template: path.join(process.cwd(), "public", "templates", "tee-shirt-homme.png"),
+    compositeOptions: positioningConfig["tee-shirt-homme"] || {
+      top: 0,
+      left: 0,
+      width: 500,
+      height: 500,
+    },
+    variants: [
+      { option: "S", price: "40.00" },
+      { option: "M", price: "40.00" },
+      { option: "L", price: "40.00" },
+      { option: "XL", price: "40.00" },
+    ],
+    price: "40.00",
+    collections: ["Boutique"],
+  },
+  {
+    name: "Le Tee Shirt Femme",
+    description: `Manches courtes / Blanc<br>
         Tailles : S, M, L, XL<br>
         100 % coton léger (Blanc), 99 % coton, 1 % polyester (gris cendré), 97 % coton, 3 % polyester (gris chiné)<br>
         Coutures doubles pour une résistance accrue`,
-        template: path.join(
-          process.cwd(),
-          "public",
-          "templates",
-          "tee-shirt-femme.png",
-        ),
-        compositeOptions: positioningConfig["tee-shirt-femme"] || {
-          top: 0,
-          left: 0,
-          width: 500,
-          height: 500,
-        },
-        variants: [
-          { option: "XS", price: "40.00" },
-          { option: "S", price: "40.00" },
-          { option: "M", price: "40.00" },
-          { option: "L", price: "40.00" },
-        ],
-        price: "40.00",
-        collections: ["Boutique"],
-      },
-      {
-        name: "Le Grand Sac de Plage",
-        description: `Disponible en Noir ou Blanc`,
-        template: path.join(
-          process.cwd(),
-          "public",
-          "templates",
-          "grand-sac-de-plage.png",
-        ),
-        compositeOptions: positioningConfig["grand-sac-de-plage"] || {
-          top: 0,
-          left: 0,
-          width: 500,
-          height: 500,
-        },
-        variants: [
-          { option: "Noir", price: "45.00" },
-          { option: "Blanc", price: "45.00" },
-        ],
-        price: "45.00",
-        collections: ["Boutique"],
-      },
-      {
-        name: "Le Sweat Shirt à Capuche Unisexe",
-        description: `Mélange léger 80 % coton et 20 % polyester, 280 g/m²<br>
+    template: path.join(process.cwd(), "public", "templates", "tee-shirt-femme.png"),
+    compositeOptions: positioningConfig["tee-shirt-femme"] || {
+      top: 0,
+      left: 0,
+      width: 500,
+      height: 500,
+    },
+    variants: [
+      { option: "XS", price: "40.00" },
+      { option: "S", price: "40.00" },
+      { option: "M", price: "40.00" },
+      { option: "L", price: "40.00" },
+    ],
+    price: "40.00",
+    collections: ["Boutique"],
+  },
+  {
+    name: "Le Grand Sac de Plage",
+    description: `Disponible en Noir ou Blanc`,
+    template: path.join(process.cwd(), "public", "templates", "grand-sac-de-plage.png"),
+    compositeOptions: positioningConfig["grand-sac-de-plage"] || {
+      top: 0,
+      left: 0,
+      width: 500,
+      height: 500,
+    },
+    variants: [
+      { option: "Noir", price: "45.00" },
+      { option: "Blanc", price: "45.00" },
+    ],
+    price: "45.00",
+    collections: ["Boutique"],
+  },
+  {
+    name: "Le Sweat Shirt à Capuche Unisexe",
+    description: `Mélange léger 80 % coton et 20 % polyester, 280 g/m²<br>
     Coupe Regular<br>
     Capuche avec cordon de serrage<br>
     Poche avant kangourou<br>
     Disponible en Blanc, Noir et Bleu Marine<br>
     Tailles : S, M, L, XL`,
-        template: path.join(process.cwd(), "public", "templates", "sweatshirt.png"),
-        compositeOptions: positioningConfig["sweatshirt"] || {
-          top: 0,
-          left: 0,
-          width: 500,
-          height: 500,
-        },
-        collections: ["Boutique"],
-        variants: (() => {
-          const colors = ["Blanc", "Noir", "Bleu Marine"];
-          const sizes = ["S", "M", "L", "XL"];
-          const vars: Array<{ option: string; price: string; skuSuffix?: string }> =
-            [];
-          for (const color of colors) {
-            for (const size of sizes) {
-              vars.push({
-                option: `${color} - ${size}`,
-                price: "75.00",
-                skuSuffix: `${color}-${size}`.replace(/\s+/g, "").toLowerCase(),
-              });
-            }
-          }
-          return vars;
-        })(),
-      },
-      {
-        name: "Coque de téléphone",
-        description: `Coque dérivée de l’œuvre. Prix fixe.<br>
+    template: path.join(process.cwd(), "public", "templates", "sweatshirt.png"),
+    compositeOptions: positioningConfig["sweatshirt"] || {
+      top: 0,
+      left: 0,
+      width: 500,
+      height: 500,
+    },
+    collections: ["Boutique"],
+    variants: (() => {
+      const colors = ["Blanc", "Noir", "Bleu Marine"];
+      const sizes = ["S", "M", "L", "XL"];
+      const vars: Array<{ option: string; price: string; skuSuffix?: string }> = [];
+      for (const color of colors) {
+        for (const size of sizes) {
+          vars.push({
+            option: `${color} - ${size}`,
+            price: "75.00",
+            skuSuffix: `${color}-${size}`.replace(/\s+/g, "").toLowerCase(),
+          });
+        }
+      }
+      return vars;
+    })(),
+  },
+  {
+    name: "Coque de téléphone",
+    description: `Coque dérivée de l’œuvre. Prix fixe.<br>
     Pour personnaliser, veuillez renseigner votre modèle lors de la commande.`,
-        template: path.join(
-          process.cwd(),
-          "public",
-          "templates",
-          "phone",
-          "generic-phone.png",
-        ),
-        compositeOptions: positioningConfig["coque-de-telephone"] || {
-          top: 0,
-          left: 0,
-          width: 500,
-          height: 500,
-        },
-        price: "29.99",
-        collections: ["Boutique"],
-      },
+    template: path.join(process.cwd(), "public", "templates", "phone", "generic-phone.png"),
+    compositeOptions: positioningConfig["coque-de-telephone"] || {
+      top: 0,
+      left: 0,
+      width: 500,
+      height: 500,
+    },
+    price: "29.99",
+    collections: ["Boutique"],
+  },
 ];
 
 // ---------- Fonctions Utilitaires ----------
@@ -321,7 +307,9 @@ async function addProductToCollectionsByNames(productId: string, collectionNames
         body: JSON.stringify(body),
       });
       if (!res.ok) {
-        console.error(`Erreur lors de l'association du produit ${productId} à la collection "${collectionName}": ${await res.text()}`);
+        console.error(
+          `Erreur lors de l'association du produit ${productId} à la collection "${collectionName}": ${await res.text()}`
+        );
       }
     } else {
       console.error(`Collection "${collectionName}" introuvable.`);
@@ -337,41 +325,59 @@ async function downloadImage(url: string): Promise<Buffer> {
   return Buffer.from(await res.arrayBuffer());
 }
 
+/**
+ * Génère un mockup plus réaliste en utilisant ImageMagick :
+ * 1. Écrit le template et l’œuvre dans des fichiers temporaires.
+ * 2. Redimensionne l’œuvre.
+ * 3. Compose l’œuvre sur le template avec un mode de fusion.
+ * 4. Retourne l'image finale en Buffer.
+ */
 async function generateMockup(
   artworkBuffer: Buffer,
   compositeOptions: CompositeOptions,
-  templatePath: string,
+  templatePath: string
 ): Promise<Buffer> {
+  // Préparation de chemins temporaires
+  const uniqueId = uuidv4();
+  const tmpDir = os.tmpdir();
+
+  const artworkInputPath = path.join(tmpDir, `artwork-${uniqueId}.png`);
+  const templateInputPath = path.join(tmpDir, `template-${uniqueId}.png`);
+  const artworkResizedPath = path.join(tmpDir, `artwork-resized-${uniqueId}.png`);
+  const outputPath = path.join(tmpDir, `output-${uniqueId}.png`);
+
+  // Lecture du template depuis le disque
   const templateBuffer = await fs.readFile(templatePath);
-  const templateMeta = await sharp(templateBuffer).metadata();
-  if (!templateMeta.width || !templateMeta.height) {
-    throw new Error("Impossible de récupérer les dimensions du template.");
+
+  // Écriture des fichiers temporaires
+  await fs.writeFile(artworkInputPath, artworkBuffer);
+  await fs.writeFile(templateInputPath, templateBuffer);
+
+  // Redimensionnement de l'œuvre avec ImageMagick
+  // (on se base sur compositeOptions.width/height)
+  const resizeCmd = `convert "${artworkInputPath}" -distort Perspective -resize ${compositeOptions.width}x${compositeOptions.height}\\> "${artworkResizedPath}"`;
+  await execAsync(resizeCmd);
+
+  // Composition de l'œuvre redimensionnée sur le template
+  // Exemple : mode "over" normal, vous pouvez utiliser -blend, -compose overlay, etc.
+  const compositeCmd = `composite -gravity Northwest -geometry +${compositeOptions.left}+${compositeOptions.top} ` +
+                       `"${artworkResizedPath}" "${templateInputPath}" "${outputPath}"`;
+  await execAsync(compositeCmd);
+
+  // Lecture du résultat final
+  const finalBuffer = await fs.readFile(outputPath);
+
+  // (Optionnel) Nettoyage des fichiers temporaires
+  try {
+    await fs.unlink(artworkInputPath);
+    await fs.unlink(templateInputPath);
+    await fs.unlink(artworkResizedPath);
+    await fs.unlink(outputPath);
+  } catch (err) {
+    console.warn("Impossible de supprimer un fichier temporaire :", err);
   }
-  const maxAllowedWidth: number = templateMeta.width - compositeOptions.left;
-  const maxAllowedHeight: number = templateMeta.height - compositeOptions.top;
-  const targetWidth: number = Math.min(compositeOptions.width, maxAllowedWidth);
-  const targetHeight: number = Math.min(compositeOptions.height, maxAllowedHeight);
-  
-  let overlay: Buffer = await sharp(artworkBuffer)
-    .resize(targetWidth, targetHeight, { fit: "inside" })
-    .toBuffer();
-  const overlayMeta = await sharp(overlay).metadata();
-  if ((overlayMeta.width || 0) < targetWidth || (overlayMeta.height || 0) < targetHeight) {
-    overlay = await sharp(overlay)
-      .extend({
-        top: 0,
-        bottom: targetHeight - (overlayMeta.height || targetHeight),
-        left: 0,
-        right: targetWidth - (overlayMeta.width || targetWidth),
-        background: { r: 0, g: 0, b: 0, alpha: 0 },
-      })
-      .toBuffer();
-  }
-  const compositeBuffer: Buffer = await sharp(templateBuffer)
-    .composite([{ input: overlay, top: compositeOptions.top, left: compositeOptions.left, blend: "overlay" }])
-    .png()
-    .toBuffer();
-  return compositeBuffer;
+
+  return finalBuffer;
 }
 
 async function createShopifyProduct(productData: ShopifyProduct): Promise<any> {
@@ -465,7 +471,14 @@ async function createDerivedProducts(payload: GenerateDerivativesPayload): Promi
       console.log(`Produit "${artworkTitle} - ${def.name}" existe déjà.`);
       continue;
     }
-    const compositeBuffer: Buffer = await generateMockup(artworkBuffer, def.compositeOptions, def.template);
+    // Génération du mockup via ImageMagick
+    const compositeBuffer: Buffer = await generateMockup(
+      artworkBuffer,
+      def.compositeOptions,
+      def.template
+    );
+    
+    // Conversion en base64 pour Shopify
     const base64Image: string = compositeBuffer.toString("base64");
     const productTitle: string = `${artworkTitle} - ${def.name}`;
     const productDescription: string = `<p>${def.description}</p><p>Produit dérivé de l’œuvre "${artworkTitle}".</p>`;
@@ -480,11 +493,13 @@ async function createDerivedProducts(payload: GenerateDerivativesPayload): Promi
         sku: `${artworkId}-${v.skuSuffix ? v.skuSuffix : v.option.replace(/\s+/g, "").toLowerCase()}`,
       }));
     } else {
-      variants = [{
-        option1: "Standard",
-        price: def.price || "0.00",
-        sku: `${artworkId}-standard`,
-      }];
+      variants = [
+        {
+          option1: "Standard",
+          price: def.price || "0.00",
+          sku: `${artworkId}-standard`,
+        },
+      ];
     }
     
     const productData: ShopifyProduct = {
@@ -500,9 +515,11 @@ async function createDerivedProducts(payload: GenerateDerivativesPayload): Promi
       published_scope: "global",
     };
     
+    // Création du produit dérivé sur Shopify
     const createdProduct = await createShopifyProduct(productData);
     createdProducts.push(createdProduct);
     
+    // Ajout aux collections définies (ex: "Boutique")
     if (def.collections && def.collections.length > 0) {
       await addProductToCollectionsByNames(createdProduct.product.id, def.collections);
     }
@@ -521,7 +538,8 @@ app.post("/webhook", async (req: Request, res: Response): Promise<void> => {
       res.status(400).json({ error: "HMAC manquant" });
       return;
     }
-    const generatedHmac: string = crypto.createHmac("sha256", SHOPIFY_WEBHOOK_SECRET)
+    const generatedHmac: string = crypto
+      .createHmac("sha256", SHOPIFY_WEBHOOK_SECRET)
       .update(rawBody)
       .digest("base64");
     if (generatedHmac !== hmacHeader) {
