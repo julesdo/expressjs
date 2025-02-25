@@ -368,7 +368,7 @@ async function generateMockup(
       .toBuffer();
   }
   const compositeBuffer: Buffer = await sharp(templateBuffer)
-    .composite([{ input: overlay, top: compositeOptions.top, left: compositeOptions.left }])
+    .composite([{ input: overlay, top: compositeOptions.top, left: compositeOptions.left, blend: "overlay" }])
     .png()
     .toBuffer();
   return compositeBuffer;
