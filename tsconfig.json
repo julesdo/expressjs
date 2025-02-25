@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "outDir": "dist",
+    "rootDir": "src",        // Indique que votre code source est dans src
     "incremental": true,
     "target": "es2017",
     "module": "commonjs",
