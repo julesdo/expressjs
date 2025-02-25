@@ -15,7 +15,7 @@ RUN npm install
 COPY . .
 
 # 6. Compiler le code TypeScript
-RUN npm run build
+RUN npm run build && ls -l dist
 
 # 7. Exposer le port 3333 (celui que vous utilisez dans index.ts)
 EXPOSE 3333
