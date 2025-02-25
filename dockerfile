@@ -1,6 +1,4 @@
-# Dockerfile (à la racine, nom exact "Dockerfile")
 FROM node:18-slim
-
 RUN apt-get update && apt-get install -y imagemagick
 
 WORKDIR /app
