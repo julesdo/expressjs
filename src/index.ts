@@ -107,7 +107,7 @@ const positioningConfig: { [key: string]: CompositeOptions } = {
   "tee-shirt-homme": { top: 164, left: 291, width: 329, height: 330 },
   "tee-shirt-femme": { top: 321, left: 312, width: 340, height: 341 },
   sweatshirt: { top: 216, left: 318, width: 336, height: 337 },
-  plexiglas: { top: 274, left: 140, width: 317, height: 215 },
+  plexiglas: { top: 49, left: 317, width: 228, height: 320 },
 };
 
 const derivedProductDefinitions: DerivedProductDefinition[] = [
