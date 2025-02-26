@@ -319,8 +319,8 @@ const derivedProductDefinitions: DerivedProductDefinition[] = [
   },
   // coque de pc portable
   {
-    name: 'Coque de PC Portable',
-    description: `Coque dérivée de l’œuvre. Prix fixe.<br>
+    name: 'Sticker pour PC Portable',
+    description: `Sticker dérivée de l’œuvre. Prix fixe.<br>
     Matière : Plastique<br>
     Étanche<br>
     Filtre UV<br>
@@ -340,7 +340,7 @@ const derivedProductDefinitions: DerivedProductDefinition[] = [
       width: 500,
       height: 500
     },
-    collections: ['Boutique', 'Accessoires', 'Coques de protection'],
+    collections: ['Boutique', 'Accessoires', 'Stickers de protection'],
     variants: (() => {
       const laptopModels = [
         'MacBook Air 13 pouces',
