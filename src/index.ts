@@ -245,16 +245,50 @@ const derivedProductDefinitions: DerivedProductDefinition[] = [
   {
     name: "Coque de téléphone",
     description: `Coque dérivée de l’œuvre. Prix fixe.<br>
-    Pour personnaliser, veuillez renseigner votre modèle lors de la commande.`,
-    template: path.join(process.cwd(), "public", "templates", "phone", "generic-phone.png"),
+      Pour personnaliser, veuillez renseigner votre modèle lors de la commande.`,
+    template: path.join(
+      process.cwd(),
+      "public",
+      "templates",
+      "phone",
+      "generic-phone.png",
+    ),
     compositeOptions: positioningConfig["coque-de-telephone"] || {
       top: 0,
       left: 0,
       width: 500,
       height: 500,
     },
-    price: "29.99",
     collections: ["Boutique"],
+    variants: (() => {
+      const phoneModels = [
+        "iPhone 16 Plus",
+        "iPhone 16",
+        "iPhone 16e",
+        "iPhone 15",
+        "iPhone 14 Pro Max",
+        "iPhone 14 Pro",
+        "iPhone 14",
+        "iPhone 13 Pro Max",
+        "iPhone 13 Pro",
+        "iPhone 13",
+        "iPhone 12 Pro Max",
+        "iPhone 12 Pro",
+        "iPhone 12",
+        "Samsung Galaxy S23 Ultra",
+        "Samsung Galaxy S23",
+        "Samsung Galaxy S22",
+        "Google Pixel 7 Pro",
+        "Google Pixel 7",
+        "Google Pixel 6",
+        "Autre (préciser le modèle en commentaire)",
+      ];
+      return phoneModels.map((model) => ({
+        option: model,           // correspond à 'option1' plus loin dans createDerivedProducts
+        price: "29.99",
+        skuSuffix: model.replace(/\s+/g, "").toLowerCase(),
+      }));
+    })(),
   },
 ];
 
