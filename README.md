@@ -1,3 +1,3 @@
 git add .
-git commit -m "maj 1.27 delete first sweat image"
+git commit -m "maj 1.28 sweat fix"
 git push -u origin main

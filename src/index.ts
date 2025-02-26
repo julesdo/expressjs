@@ -59,7 +59,7 @@ interface DerivedProductDefinition {
   name: string;
   description: string;
   template: string;
-  compositeOptions?: CompositeOptions;
+  compositeOptions: CompositeOptions;
   variants?: Array<{ option: string; price: string; skuSuffix?: string }>;
   price?: string;
   collections?: string[];
@@ -220,6 +220,12 @@ const derivedProductDefinitions: DerivedProductDefinition[] = [
     Disponible en Blanc, Noir et Bleu Marine<br>
     Tailles : S, M, L, XL`,
     template: path.join(process.cwd(), "public", "templates", "sweatshirt-bleumarine.png"),
+    compositeOptions: positioningConfig["sweatshirt"] || {
+      top: 0,
+      left: 0,
+      width: 500,
+      height: 500,
+    },
     collections: ["Boutique", "Vêtements", "Hommes", "Femmes", "Sweatshirts"],
     variants: (() => {
       const colors = ["Blanc", "Noir", "Bleu Marine"];
