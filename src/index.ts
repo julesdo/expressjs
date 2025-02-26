@@ -218,7 +218,7 @@ const derivedProductDefinitions: DerivedProductDefinition[] = [
     Poche avant kangourou<br>
     Disponible en Blanc, Noir et Bleu Marine<br>
     Tailles : S, M, L, XL`,
-    template: path.join(process.cwd(), "public", "templates", "sweatshirt.png"),
+    template: path.join(process.cwd(), "public", "templates", "sweatshirt-bleumarine.png"),
     compositeOptions: positioningConfig["sweatshirt"] || {
       top: 0,
       left: 0,
@@ -284,7 +284,7 @@ const derivedProductDefinitions: DerivedProductDefinition[] = [
         "Autre (préciser le modèle en commentaire)",
       ];
       return phoneModels.map((model) => ({
-        option: model,           // correspond à 'option1' plus loin dans createDerivedProducts
+        option: model, // correspond à 'option1' plus loin
         price: "29.99",
         skuSuffix: model.replace(/\s+/g, "").toLowerCase(),
       }));
@@ -387,8 +387,7 @@ async function generateMockup(
   await fs.writeFile(artworkInputPath, artworkBuffer);
   await fs.writeFile(templateInputPath, templateBuffer);
 
-  // Redimensionnement de l'œuvre avec ImageMagick
-  // (on se base sur compositeOptions.width/height)
+  // Redimensionnement de l'œuvre
   const resizeCmd = `convert "${artworkInputPath}" \
   -resize ${compositeOptions.width}x${compositeOptions.height}^ \
   -gravity center \
@@ -396,16 +395,15 @@ async function generateMockup(
   "${artworkResizedPath}"`;
   await execAsync(resizeCmd);
 
-  // Composition de l'œuvre redimensionnée sur le template
-  // Exemple : mode "over" normal, vous pouvez utiliser -blend, -compose overlay, etc.
-  const compositeCmd = `composite -gravity Northwest -geometry +${compositeOptions.left}+${compositeOptions.top} ` +
-                       `"${artworkResizedPath}" "${templateInputPath}" "${outputPath}"`;
+  // Composition
+  const compositeCmd = `composite -gravity Northwest -geometry +${compositeOptions.left}+${compositeOptions.top} \
+    "${artworkResizedPath}" "${templateInputPath}" "${outputPath}"`;
   await execAsync(compositeCmd);
 
   // Lecture du résultat final
   const finalBuffer = await fs.readFile(outputPath);
 
-  // (Optionnel) Nettoyage des fichiers temporaires
+  // Nettoyage
   try {
     await fs.unlink(artworkInputPath);
     await fs.unlink(templateInputPath);
@@ -499,6 +497,95 @@ async function updateArtworkTags(productId: string, currentTags: string[], newTa
   }
 }
 
+// =============== NOUVEAU : Ajouter des images de variantes pour le sweatshirt ===============
+
+/**
+ * Ajoute des images pour chaque couleur de sweatshirt (Blanc, Noir, Bleu Marine).
+ * On suppose que vous avez des templates séparés, ex. sweatshirt-blanc.png, sweatshirt-noir.png, sweatshirt-bleumarine.png
+ * Si vous n'avez qu'un template unique, vous pouvez adapter.
+ */
+async function addSweatshirtVariantImages(artworkBuffer: Buffer, product: any) {
+  // 1) Mapping couleur -> template
+  //    Mettez ces fichiers dans votre "public/templates" si vous les avez.
+  const colorTemplates: { [key: string]: string } = {
+    "Blanc": path.join(process.cwd(), "public", "templates", "sweatshirt-blanc.png"),
+    "Noir": path.join(process.cwd(), "public", "templates", "sweatshirt-noir.png"),
+    "Bleu Marine": path.join(process.cwd(), "public", "templates", "sweatshirt-bleumarine.png"),
+  };
+
+  // 2) Récupérer la liste des variantes du produit
+  //    Shopify renvoie un tableau "variants" : {id, title, option1, ...}
+  const variants = product.variants as Array<{
+    id: number;
+    title: string;
+    option1: string;
+  }>;
+
+  // 3) Pour chaque couleur définie dans colorTemplates
+  for (const color of Object.keys(colorTemplates)) {
+    // 3a) Chercher les variantes correspondantes (ex. "Noir - S", "Noir - M")
+    const matchingVariants = variants.filter((v) => v.option1.includes(color));
+    if (matchingVariants.length === 0) {
+      console.log(`Aucune variante trouvée pour la couleur : ${color}`);
+      continue;
+    }
+
+    // 3b) Générer le mockup pour cette couleur
+    const templatePath = colorTemplates[color];
+    // On réutilise "positioningConfig.sweatshirt"
+    const compositeOptions = positioningConfig["sweatshirt"];
+    const colorMockupBuffer = await generateMockup(artworkBuffer, compositeOptions, templatePath);
+
+    // 3c) Convertir en base64
+    const base64Image = colorMockupBuffer.toString("base64");
+
+    // 3d) Pour chaque variante correspondant à cette couleur, on crée une image associée
+    for (const variantObj of matchingVariants) {
+      await addImageToShopifyVariant(product.id, variantObj.id, base64Image);
+    }
+  }
+}
+
+/**
+ * Ajoute une image à une variante Shopify (POST /products/{productId}/images.json).
+ */
+async function addImageToShopifyVariant(
+  productId: number,
+  variantId: number,
+  base64Image: string
+) {
+  const shopifyAdminDomain: string = process.env.SHOPIFY_ADMIN_DOMAIN!;
+  const shopifyAdminToken: string = process.env.SHOPIFY_ADMIN_API_ACCESS_TOKEN!;
+
+  // Dans Shopify, pour associer une image à une variante, on utilise la propriété "variant_ids"
+  // L'API : POST /products/{productId}/images.json
+  const url = `${shopifyAdminDomain}/products/${productId}/images.json`;
+  const body = {
+    image: {
+      attachment: base64Image,
+      variant_ids: [variantId],
+    },
+  };
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Shopify-Access-Token": shopifyAdminToken,
+    },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(
+      `Erreur lors de l'ajout de l'image à la variante ${variantId} : ${res.status} ${res.statusText} - ${errorText}`
+    );
+  }
+  console.log(`Image ajoutée à la variante ${variantId} du produit ${productId}`);
+}
+
+// =============== FIN DU NOUVEAU CODE ===============
+
 async function createDerivedProducts(payload: GenerateDerivativesPayload): Promise<any[]> {
   const { artworkId, artworkTitle, artworkImageUrl } = payload;
   const artworkBuffer: Buffer = await downloadImage(artworkImageUrl);
@@ -509,14 +596,14 @@ async function createDerivedProducts(payload: GenerateDerivativesPayload): Promi
       console.log(`Produit "${artworkTitle} - ${def.name}" existe déjà.`);
       continue;
     }
-    // Génération du mockup via ImageMagick
+    // Génération du mockup principal (image de base du produit)
     const compositeBuffer: Buffer = await generateMockup(
       artworkBuffer,
       def.compositeOptions,
       def.template
     );
     
-    // Conversion en base64 pour Shopify
+    // Conversion en base64 pour la première image
     const base64Image: string = compositeBuffer.toString("base64");
     const productTitle: string = `${artworkTitle} - ${def.name}`;
     const productDescription: string = `<p>${def.description}</p><p>Produit dérivé de l’œuvre "${artworkTitle}".</p>`;
@@ -545,7 +632,7 @@ async function createDerivedProducts(payload: GenerateDerivativesPayload): Promi
       body_html: productDescription,
       vendor: "Anne Mondy",
       product_type: def.name,
-      images: [{ attachment: base64Image }],
+      images: [{ attachment: base64Image }], // 1ère image
       tags: ["Derivative", artworkId, "GeneratedByAutomation"],
       options,
       variants,
@@ -561,6 +648,12 @@ async function createDerivedProducts(payload: GenerateDerivativesPayload): Promi
     if (def.collections && def.collections.length > 0) {
       await addProductToCollectionsByNames(createdProduct.product.id, def.collections);
     }
+
+    // === NOUVEAU : si c'est le sweatshirt, on génère un mockup par couleur et on l'associe aux variantes ===
+    if (def.name === "Le Sweat Shirt à Capuche Unisexe") {
+      await addSweatshirtVariantImages(artworkBuffer, createdProduct.product);
+    }
+    // === Fin du nouveau bloc ===
   }
   return createdProducts;
 }
