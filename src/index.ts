@@ -80,6 +80,7 @@ interface ShopifyProduct {
   variants?: Array<{ option1: string; price: string; sku: string }>;
   published_at: string;
   published_scope: string;
+  status: string;
 }
 
 interface GenerateDerivativesPayload {
@@ -638,6 +639,7 @@ async function createDerivedProducts(payload: GenerateDerivativesPayload): Promi
       variants,
       published_at: new Date().toISOString(),
       published_scope: "global",
+      status: "active",
     };
     
     // Création du produit dérivé sur Shopify
