@@ -132,7 +132,7 @@ const derivedProductDefinitions: DerivedProductDefinition[] = [
       { option: "90X60", price: "250.00", skuSuffix: "90x60" },
     ],
     price: "100.00",
-    collections: ["Boutique"],
+    collections: ["Boutique", "Œuvres plexiglas", "Décorations"],
   },
   {
     name: "Le Sac fourre-tout Deluxe en coton",
@@ -147,7 +147,7 @@ const derivedProductDefinitions: DerivedProductDefinition[] = [
       height: 500,
     },
     price: "30.00",
-    collections: ["Boutique"],
+    collections: ["Boutique", "Sacs", "Accessoires"],
   },
   {
     name: "Le Tee Shirt HOMME",
@@ -169,7 +169,7 @@ const derivedProductDefinitions: DerivedProductDefinition[] = [
       { option: "XL", price: "40.00" },
     ],
     price: "40.00",
-    collections: ["Boutique"],
+    collections: ["Boutique", "Vêtements", "Hommes", "Tee-shirts"],
   },
   {
     name: "Le Tee Shirt Femme",
@@ -191,7 +191,7 @@ const derivedProductDefinitions: DerivedProductDefinition[] = [
       { option: "L", price: "40.00" },
     ],
     price: "40.00",
-    collections: ["Boutique"],
+    collections: ["Boutique", "Vêtements", "Femmes", "Tee-shirts"],
   },
   {
     name: "Le Grand Sac de Plage",
@@ -208,7 +208,7 @@ const derivedProductDefinitions: DerivedProductDefinition[] = [
       { option: "Blanc", price: "45.00" },
     ],
     price: "45.00",
-    collections: ["Boutique"],
+    collections: ["Boutique", "Sacs", "Accessoires"],
   },
   {
     name: "Le Sweat Shirt à Capuche Unisexe",
@@ -225,7 +225,7 @@ const derivedProductDefinitions: DerivedProductDefinition[] = [
       width: 500,
       height: 500,
     },
-    collections: ["Boutique"],
+    collections: ["Boutique", "Vêtements", "Hommes", "Femmes", "Sweatshirts"],
     variants: (() => {
       const colors = ["Blanc", "Noir", "Bleu Marine"];
       const sizes = ["S", "M", "L", "XL"];
@@ -259,7 +259,7 @@ const derivedProductDefinitions: DerivedProductDefinition[] = [
       width: 500,
       height: 500,
     },
-    collections: ["Boutique"],
+    collections: ["Boutique", "Accessoires", "Coques de protection"],
     variants: (() => {
       const phoneModels = [
         "iPhone 16 Plus",
